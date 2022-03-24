@@ -4,5 +4,11 @@
     <string name="count_down">Count Down</string>
     <string name="reset">Reset</string>
     <string name="store">Store</string>
+    <string name="record">Record</string>
+
+    <string-array name="subject_array">
+        <item>푸쉬업</item>
+        <item>풀업</item>
+    </string-array>
 
 </resources>

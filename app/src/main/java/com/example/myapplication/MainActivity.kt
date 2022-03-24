@@ -1,122 +1,159 @@
 package com.example.myapplication
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
+import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.os.VibratorManager
 import android.util.Log
-import android.widget.Button
-import android.widget.TextView
+import android.view.View
+import android.widget.*
 import androidx.annotation.RequiresApi
+import com.example.myapplication.Common.COUNT_DB
 import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var countTxtView : TextView
-    lateinit var dateTxtView : TextView
-    lateinit var sharedPref : SharedPreferences
+    lateinit var subjectSpinner : Spinner
+    lateinit var countDB :SharedPreferences
     lateinit var vibratorManager: VibratorManager
     private var count = 0
-    lateinit var date : String
+    lateinit var subject : String
+
+    lateinit var countUpBtn : Button
+    lateinit var countDownBtn : Button
+    lateinit var resetBtn : Button
+    lateinit var storeBtn : Button
+    lateinit var recordBtn : Button
+
+    lateinit var today : String
 
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
         vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        countTxtView = findViewById(R.id.countTxt)
-        dateTxtView = findViewById(R.id.dateTxt)
+        countDB = this.getSharedPreferences(COUNT_DB, Context.MODE_PRIVATE)
 
-        val countUpBtn = findViewById<Button>(R.id.countUpBtn)
-        val countDownBtn = findViewById<Button>(R.id.countDownBtn)
-        val resetBtn = findViewById<Button>(R.id.resetBtn)
-        val storeBtn = findViewById<Button>(R.id.storeBtn)
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        today = dateFormat.format(Date())
 
-        sharedPref = this.getSharedPreferences(COUNT_DB, Context.MODE_PRIVATE)
-
+        viewAssign()
+        setOnClickListener()
 
         Log.d("lifeCycle", "onCreate count : $count")
-
-        countTxtView.setText(count.toString())
-
-        countUpBtn.setOnClickListener {
-            changeCount(++count)
-        }
-
-        countDownBtn.setOnClickListener {
-            changeCount(--count)
-        }
-
-        resetBtn.setOnClickListener {
-            changeCount(0)
-        }
-
-        storeBtn.setOnClickListener {
-            with(sharedPref.edit()){
-                putInt(date, count)
-                apply()
-            }
-        }
     }
-
 
     override fun onResume() {
         super.onResume()
 
-        count = sharedPref.getInt(KEY_COUNT, 0)
-        countTxtView.setText(count.toString())
-
-
-        date = SimpleDateFormat("yyyy-MM-dd").format(Date())
-
-        dateTxtView.setText(date)
+        loadCountBySubject()
 
         Log.d("lifeCycle", "onResume count : $count")
     }
 
+
     override fun onPause() {
         super.onPause()
         Log.d("lifeCycle", "onPause count : $count")
-        with(sharedPref.edit()){
-            putInt(KEY_COUNT, count)
+
+        saveCountBySubject()
+    }
+
+
+
+    private fun viewAssign() {
+
+        countTxtView = findViewById(R.id.countTxt)
+        subjectSpinner = findViewById(R.id.subject_spinner)
+
+        ArrayAdapter.createFromResource(
+            this, R.array.subject_array, android.R.layout.simple_spinner_item).also {adapter->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            subjectSpinner.adapter = adapter
+        }
+
+        countUpBtn = findViewById<Button>(R.id.countUpBtn)
+        countDownBtn = findViewById<Button>(R.id.countDownBtn)
+        resetBtn = findViewById<Button>(R.id.resetBtn)
+        storeBtn = findViewById<Button>(R.id.storeBtn)
+        recordBtn = findViewById<Button>(R.id.recordBtn)
+    }
+
+    private fun setOnClickListener() {
+        countUpBtn.setOnClickListener {
+            setVibrate()
+            changeCount(++count)
+        }
+
+        countDownBtn.setOnClickListener {
+            setVibrate()
+            changeCount(--count)
+        }
+
+        resetBtn.setOnClickListener {
+            setVibrate()
+            changeCount(0)
+        }
+
+        storeBtn.setOnClickListener {
+            setVibrate()
+            with(countDB.edit()) {
+                putInt(subject, count)
+                apply()
+            }
+        }
+
+        recordBtn.setOnClickListener {
+            val recordIntent = Intent(this, RecordActivity::class.java)
+            startActivity(recordIntent)
+        }
+
+        subjectSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                saveCountBySubject()
+                subjectSpinner.setSelection(position)
+                loadCountBySubject()
+            }
+
+            override fun onNothingSelected(p0: AdapterView<*>?) {
+                TODO("Not yet implemented")
+            }
+        }
+
+    }
+
+
+    private fun loadCountBySubject() {
+        subject = subjectSpinner.selectedItem as String
+        count = countDB.getInt("$today $subject", 0)
+        countTxtView.setText(count.toString())
+    }
+
+
+    private fun saveCountBySubject() {
+
+        with(countDB.edit()) {
+            putInt("$today $subject", count)
             apply()
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-
-        Log.d("lifeCycle", "onStop count : $count")
+    fun setVibrate(){
+        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(30, 50))
+        }
     }
 
-    override fun onStart() {
-        super.onStart()
-        Log.d("lifeCycle", "onstart count : $count")
-    }
-
-    override fun onRestart() {
-        super.onRestart()
-        Log.d("lifeCycle", "onRestart count : $count")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        Log.d("lifeCycle", "onDestroy count : $count")
-    }
 
     private fun changeCount(count: Int) {
         this.count = count
         countTxtView.text = count.toString()
     }
 
-    companion object{
-        private val COUNT_DB = "countDB"
-        private val KEY_COUNT = "count"
-    }
+
 }
