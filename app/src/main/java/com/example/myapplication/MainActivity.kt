@@ -4,12 +4,20 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.*
-import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import android.widget.*
 import androidx.annotation.RequiresApi
-import com.example.myapplication.Common.COUNT_DB
+import androidx.appcompat.app.AppCompatActivity
+import com.example.myapplication.Common.LOG_TAG
+import com.example.myapplication.Common.SUBJECT_DB
+import com.example.myapplication.recordDB.Record
+import com.example.myapplication.recordDB.RecordDAO
+import com.example.myapplication.recordDB.RecordDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -17,16 +25,24 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var countTxtView : TextView
     lateinit var subjectSpinner : Spinner
-    lateinit var countDB :SharedPreferences
+    lateinit var subjectInputBox : EditText
+    lateinit var spinnerAdapter: ArrayAdapter<String>
+
+    lateinit var subjectInputBtn : Button
+    lateinit var countUpBtn : Button
+    lateinit var countDownBtn : Button
+
+    lateinit var recordBtn : Button
+    lateinit var resetSubjectBtn : Button
+
+
+    lateinit var recordDB : RecordDatabase
+    lateinit var recordDAO: RecordDAO
+    lateinit var subjectDB : SharedPreferences
+
     lateinit var vibratorManager: VibratorManager
     private var count = 0
     lateinit var subject : String
-
-    lateinit var countUpBtn : Button
-    lateinit var countDownBtn : Button
-    lateinit var resetBtn : Button
-    lateinit var storeBtn : Button
-    lateinit var recordBtn : Button
 
     lateinit var today : String
 
@@ -36,15 +52,40 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        countDB = this.getSharedPreferences(COUNT_DB, Context.MODE_PRIVATE)
+        recordDB = RecordDatabase.getInstance(applicationContext)
+        recordDAO = recordDB.recordDao()
+
+        subjectDB = this.getSharedPreferences(SUBJECT_DB, Context.MODE_PRIVATE)
 
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
         today = dateFormat.format(Date())
 
         viewAssign()
-        setOnClickListener()
+        setListeners()
+
+        setSpinnerAdapter()
+
+
 
         Log.d("lifeCycle", "onCreate count : $count")
+    }
+
+    private fun setSpinnerAdapter() {
+
+        var subjectArray : MutableList<String> = ArrayList()
+
+        subjectDB.all.forEach{subjectMap->
+            subjectArray.add(subjectMap.value.toString())
+        }
+
+        ArrayAdapter(this, android.R.layout.simple_spinner_item, subjectArray).also { adapter->
+
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            subjectSpinner.adapter = adapter
+            spinnerAdapter = adapter
+        }
+
+
     }
 
     override fun onResume() {
@@ -69,43 +110,58 @@ class MainActivity : AppCompatActivity() {
 
         countTxtView = findViewById(R.id.countTxt)
         subjectSpinner = findViewById(R.id.subject_spinner)
+        subjectInputBox = findViewById(R.id.subjectInputBox)
 
-        ArrayAdapter.createFromResource(
-            this, R.array.subject_array, android.R.layout.simple_spinner_item).also {adapter->
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            subjectSpinner.adapter = adapter
-        }
+        subjectInputBtn = findViewById(R.id.addSubjectBtn)
+        countUpBtn = findViewById(R.id.countUpBtn)
+        countDownBtn = findViewById(R.id.countDownBtn)
 
-        countUpBtn = findViewById<Button>(R.id.countUpBtn)
-        countDownBtn = findViewById<Button>(R.id.countDownBtn)
-        resetBtn = findViewById<Button>(R.id.resetBtn)
-        storeBtn = findViewById<Button>(R.id.storeBtn)
-        recordBtn = findViewById<Button>(R.id.recordBtn)
+        recordBtn = findViewById(R.id.recordBtn)
+        resetSubjectBtn = findViewById(R.id.resetSubjectDB)
     }
 
-    private fun setOnClickListener() {
+    private fun setListeners() {
         countUpBtn.setOnClickListener {
             setVibrate()
             changeCount(++count)
         }
-
         countDownBtn.setOnClickListener {
             setVibrate()
             changeCount(--count)
         }
 
-        resetBtn.setOnClickListener {
+        subjectInputBtn.setOnClickListener {
             setVibrate()
-            changeCount(0)
+            val newSubject = subjectInputBox.text.toString()
+            saveNewSubject(newSubject)
+            loadSubject(newSubject)
+            subjectInputBox.setText("")
         }
 
-        storeBtn.setOnClickListener {
-            setVibrate()
-            with(countDB.edit()) {
-                putInt(subject, count)
-                apply()
+        countUpBtn.setOnTouchListener(object : View.OnTouchListener{
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                when(event?.action){
+                    MotionEvent.ACTION_DOWN
+                    ->{
+                        setVibrate()
+                        changeCount(++count)
+                    }
+                }
+                return true
             }
-        }
+        })
+        countDownBtn.setOnTouchListener(object : View.OnTouchListener{
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                when(event?.action){
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE ->{
+                        setVibrate()
+                        changeCount(--count)
+                    }
+                }
+                return true
+            }
+        })
+
 
         recordBtn.setOnClickListener {
             val recordIntent = Intent(this, RecordActivity::class.java)
@@ -124,21 +180,56 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        resetSubjectBtn.setOnClickListener {
+            with(subjectDB.edit()){
+                clear()
+                apply()
+            }
+        }
+
+    }
+
+
+    private fun loadSubject(newSubject : String){
+        spinnerAdapter.add(newSubject)
+    }
+
+    private fun saveNewSubject(newSubject: String) {
+        with(subjectDB.edit()) {
+            putString(newSubject, newSubject)
+            apply()
+        }
     }
 
 
     private fun loadCountBySubject() {
-        subject = subjectSpinner.selectedItem as String
-        count = countDB.getInt("$today $subject", 0)
-        countTxtView.setText(count.toString())
+        try{
+            subject = subjectSpinner.selectedItem as String
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val count = recordDAO.getCount(today, subject)
+                countTxtView.text = count.toString()
+
+                Log.d(LOG_TAG, "subject : $subject , count : $count")
+            }
+
+        }catch (exception : NullPointerException){
+            Log.d("exception", "subject Spinner가 비어있음.")
+            exception.printStackTrace()
+        }
+
     }
 
 
     private fun saveCountBySubject() {
 
-        with(countDB.edit()) {
-            putInt("$today $subject", count)
-            apply()
+        subject?.let{
+            Log.d(LOG_TAG, "subject : $subject , count : $count")
+
+            val newRecord = Record(today, subject, count)
+            CoroutineScope(Dispatchers.IO).launch {
+                recordDAO.insert(newRecord)
+            }
         }
     }
 

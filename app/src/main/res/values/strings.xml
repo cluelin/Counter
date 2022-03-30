@@ -1,10 +1,11 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">DO기록</string>
     <string name="count_up">Count Up</string>
     <string name="count_down">Count Down</string>
     <string name="reset">Reset</string>
     <string name="store">Store</string>
     <string name="record">Record</string>
+    <string name="add_subject">Add subject</string>
 
     <string-array name="subject_array">
         <item>푸쉬업</item>

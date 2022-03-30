@@ -6,12 +6,23 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <Button
+        android:id="@+id/addSubjectBtn"
+        android:layout_width="113dp"
+        android:layout_height="87dp"
+        android:text="@string/add_subject"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.828"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.187" />
+
     <TextView
         android:id="@+id/countTxt"
         android:layout_width="210dp"
         android:layout_height="30dp"
         android:gravity="center"
-        android:text="Hello World!"
         android:textAlignment="center"
         android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -62,28 +73,17 @@
         app:layout_constraintVertical_bias="0.515" />
 
     <Button
-        android:id="@+id/resetBtn"
-        android:layout_width="119dp"
-        android:layout_height="117dp"
-        android:text="@string/reset"
+        android:id="@+id/resetSubjectDB"
+        android:layout_width="68dp"
+        android:layout_height="31dp"
+        android:text="reset subject DB"
+        android:textSize="5sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.226"
+        app:layout_constraintHorizontal_bias="0.227"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.783" />
-
-    <Button
-        android:id="@+id/storeBtn"
-        android:layout_width="119dp"
-        android:layout_height="117dp"
-        android:text="@string/store"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.695"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.783" />
+        app:layout_constraintVertical_bias="0.95" />
 
     <Button
         android:id="@+id/recordBtn"
@@ -96,5 +96,18 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.491" />
+
+    <EditText
+        android:id="@+id/subjectInputBox"
+        android:layout_width="177dp"
+        android:layout_height="39dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.111"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.206" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
