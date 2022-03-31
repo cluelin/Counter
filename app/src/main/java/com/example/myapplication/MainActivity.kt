@@ -204,13 +204,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadCountBySubject() {
         try{
-            subject = subjectSpinner.selectedItem as String
-
             CoroutineScope(Dispatchers.IO).launch {
-                val count = recordDAO.getCount(today, subject)
+                subject = subjectSpinner.selectedItem as String
+                count = recordDAO.getCount(today, subject)
                 countTxtView.text = count.toString()
 
-                Log.d(LOG_TAG, "subject : $subject , count : $count")
+                Log.d(LOG_TAG, "load subject : $subject , count : $count")
             }
 
         }catch (exception : NullPointerException){
@@ -222,13 +221,12 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun saveCountBySubject() {
-
+        Log.d(LOG_TAG, "save subject : $subject , count : $count")
         subject?.let{
-            Log.d(LOG_TAG, "subject : $subject , count : $count")
-
-            val newRecord = Record(today, subject, count)
             CoroutineScope(Dispatchers.IO).launch {
+                val newRecord = Record(today, subject, count)
                 recordDAO.insert(newRecord)
+
             }
         }
     }
