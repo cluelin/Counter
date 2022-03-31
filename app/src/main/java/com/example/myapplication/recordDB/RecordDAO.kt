@@ -1,5 +1,6 @@
 package com.example.myapplication.recordDB
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 
 @Dao
@@ -14,8 +15,8 @@ interface RecordDAO {
     fun getCount(date : String, subject : String) : Int
 
     @Query("SELECT * FROM Record WHERE date = :date")
-    fun getRecord(date : String) : List<Record>
+    fun getRecord(date : String) : LiveData<List<Record>>
 
-    @Query("SELECT DISTINCT date FROM Record")
+    @Query("SELECT DISTINCT date FROM Record ORDER BY date DESC")
     fun getDate() : List<String>
 }
