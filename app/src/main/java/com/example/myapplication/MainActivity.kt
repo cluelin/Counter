@@ -121,14 +121,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setListeners() {
-        countUpBtn.setOnClickListener {
-            setVibrate()
-            changeCount(++count)
-        }
-        countDownBtn.setOnClickListener {
-            setVibrate()
-            changeCount(--count)
-        }
 
         subjectInputBtn.setOnClickListener {
             setVibrate()
@@ -138,29 +130,8 @@ class MainActivity : AppCompatActivity() {
             subjectInputBox.setText("")
         }
 
-        countUpBtn.setOnTouchListener(object : View.OnTouchListener{
-            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                when(event?.action){
-                    MotionEvent.ACTION_DOWN
-                    ->{
-                        setVibrate()
-                        changeCount(++count)
-                    }
-                }
-                return true
-            }
-        })
-        countDownBtn.setOnTouchListener(object : View.OnTouchListener{
-            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                when(event?.action){
-                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE ->{
-                        setVibrate()
-                        changeCount(--count)
-                    }
-                }
-                return true
-            }
-        })
+        countUpBtn.setOnTouchListener(CountBtnHandler())
+        countDownBtn.setOnTouchListener(CountBtnHandler())
 
 
         recordBtn.setOnClickListener {
@@ -188,6 +159,39 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
+
+
+    inner class CountBtnHandler : View.OnTouchListener{
+        override fun onTouch(view: View?, event: MotionEvent?): Boolean {
+
+            var delay : Long = 500
+
+            when(event?.action){
+                MotionEvent.ACTION_DOWN->{
+                    loopBool = true
+
+                    CoroutineScope(Dispatchers.IO).launch{
+                        while(loopBool){
+                            setVibrate()
+                            if(view == countUpBtn)
+                                changeCount(++count)
+                            else if( view == countDownBtn)
+                                changeCount(--count)
+
+                            Thread.sleep(delay)
+
+                            delay = 100
+                        }
+                    }
+                }
+                MotionEvent.ACTION_UP->{
+                    loopBool=false
+                }
+            }
+            return true
+        }
+    }
+
 
 
     private fun loadSubject(newSubject : String){
@@ -244,5 +248,8 @@ class MainActivity : AppCompatActivity() {
         countTxtView.text = count.toString()
     }
 
+    companion object{
+        var loopBool = true
+    }
 
 }
